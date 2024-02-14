@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/stylesheet/dashboard.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <title>Interactive Chat</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+
+      header {
+        background-color: #333;
+        color: #fff;
+        padding: 10px 20px;
+        text-align: center;
+      }
+
+      .container {
+        display: flex;
+        height: 100vh;
+      }
+
+      .sidebar {
+        width: 250px;
+        background-color: #f4f4f4;
+        padding: 20px;
+        box-sizing: border-box;
+        justify-content: center;
+      }
+
+      .chat-area {
+        flex: 1;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      .user-contact {
+        margin-bottom: 20px;
+      }
+
+      .user-contact:last-child {
+        margin-bottom: 0;
+      }
+
+      .user-contact a {
+        text-decoration: none;
+        color: #333;
+      }
+
+      .user-contact a:hover {
+        color: #666;
+      }
+
+      .chat-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+
+      .chat_textBox form {
+        display: flex;
+        margin-top: 20px;
+      }
+
+      .chat-box {
+        width: 100%;
+        height: 410px;
+        background-color: whitesmoke;
+        padding: 10px 10px 10px 10px;
+      }
+
+      .chat-btn {
+        padding: 10px 20px;
+        background-color: #333;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .user_profile {
+        width: fit-content;
+        height: auto;
+        background-color: lightgrey;
+        padding: 10px 20px 6px 20px;
+        display: flex;
+        border-radius: 10px;
+        margin-bottom: 10px;
+      }
+      .user_profile_text {
+        margin: auto;
+        margin-left: 10px;
+      }
+      .user_profile_text label {
+        display: block;
+      }
+      .sender_msg {
+        display: block;
+
+        background-color: #666;
+        width: fit-content;
+        margin-left: auto;
+        margin-top: 10px;
+        padding: 6px 14px 6px 14px;
+        font-size: 14px;
+        color: white;
+        font-weight: bolder;
+        border-top-right-radius: 10px;
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+      }
+      .receiver_msg {
+        display: block;
+        background-color: lightgray;
+        width: fit-content;
+        margin-top: 10px;
+        padding: 6px 14px 6px 14px;
+        font-size: 14px;
+        color: #323039;
+        border-top-right-radius: 10px;
+        border-top-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+      }
+
+      #receiver_profile {
+        border-radius: 100px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Cartoon Network</h1>
+    </header>
+    <div class="container">
+      <div class="sidebar">
+        {% for users in findAllUser %}
+        <div class="user-contact ChatUser">
+          <a href="#" class="reciveridhtml" reciversId="{{ users._id }}">
+            {{ users.userName }}</a
+          >
+        </div>
+        {% endfor %}
+        <!-- <div class="user-contact"><a href="#">User 1</a></div>
+            <div class="user-contact"><a href="#">User 2</a></div>
+            <div class="user-contact"><a href="#">User 3</a></div>
+            <div class="user-contact"><a href="#">User 4</a></div> -->
+      </div>
+      <div class="chat-area">
+        <div class="user_profile">
+          <!-- <img src="/images/profile.png" id="receiver_profile" alt="user profile" width="50px" height="50px"> -->
+          <div class="user_profile_text">
+            <label
+              id="user_profile_name"
+              style="font-size: 20px; font-weight: bolder"
+              >Username</label
+            >
+            <label style="font-size: 13px">Online</label>
+          </div>
+        </div>
+        <div class="Chat-animation">
+          <h1 style="width: 100%; justify-content: center">
+            "Click on the left side of the username to start chatting."
+          </h1>
+        </div>
+        <div class="chat-box" style="background-color: #3333">
+          <!-- All sender and receiver messages show here -->
+        </div>
+        <div class="chat_textBox">
+          <form action="" method="post" class="chat-form">
+            <input type="hidden" id="user_id" />
+            <input
+              type="text"
+              class="chat-input"
+              id="user_msg"
+              placeholder="Type your message here..."
+            />&nbsp;&nbsp;&nbsp;
+            <button class="chat-btn sendMsg">Send</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const sender_id = "{{user._id}}";
+      let recevier_id;
+
+      $(document).ready(() => {
+        $(".chat-box").hide();
+        ///message send
+        $(".reciveridhtml").click((e) => {
+          // e.preventDefault();
+          let reciverId = $(e.currentTarget).attr("reciversId");
+          recevier_id = reciverId;
+          $(".Chat-animation").hide();
+         
+          $(".chat-box").show();
+          socket.emit("saveChat", { sender_id, recevier_id });
+        });
+      });
+
+      /////
+      socket.on("loadChats", (allChat) => {
+        $(".chat-box").html(""); ///empty all previous chats......
+        for (let index = 0; index < allChat.length; index++) {
+          console.log(allChat[index].sender_id)
+          if (sender_id == allChat[index].sender_id) {
+            sendAndReciverMsg(message, "sender_msg");
+          } else {
+            sendAndReciverMsg(data.message, "receiver_msg");
+          }
+          
+        }
+      });
+      ////////
+      $(".chat-form").submit((e) => {
+        e.preventDefault();
+        let message = $("#user_msg").val();
+        sendAndReciverMsg(message, "sender_msg");
+        socket.emit("sender_message", { message, sender_id, recevier_id });
+        $("#user_msg").val("");
+      });
+      ////////////////
+      socket.on("reciveMsg", (data) => {
+        // let { sender_id, recevier_id, message } = data;
+        // console.log("reciver message console", data.sender_id);
+        // console.log("reciver message console", data.recevier_id);
+        // console.log("reciver message console", data.message);
+        if (sender_id == data.recevier_id && recevier_id == data.sender_id) {
+          sendAndReciverMsg(data.message, "receiver_msg");
+        } else {
+          sendAndReciverMsg(message, "sender_msg");
+        }
+      });
+      /////
+      function sendAndReciverMsg(message, position) {
+        // let lable = document.createElement("lable");
+        // lable.classList.add(position);
+        // messageContainer.appendChild(lable);
+        // lable.innerText = message;
+
+        //            or            //
+
+        $(".chat-box").append(`<lable class="${position}">${message}</lable>`);
+      }
+    </script>
+  </body>
+</html>
